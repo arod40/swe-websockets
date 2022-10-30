@@ -12,7 +12,9 @@ import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
 import ws.model.Message;
+import ws.model.MessageType;
 import ws.model.User;
+import ws.model.UserStatus;
 
 @ServerEndpoint(value = "/chat/{username}", decoders = MessageDecoder.class, encoders = MessageEncoder.class)
 public class ChatEndpoint {
@@ -28,7 +30,7 @@ public class ChatEndpoint {
 
         User user = new User();
         user.setUsername(username);
-        user.setActive(true);
+        user.setStatus(UserStatus.ONLINE);
         users.put(session.getId(), user);
         logger.log(Level.INFO, username + " connected!!");
     }
@@ -36,6 +38,9 @@ public class ChatEndpoint {
     @OnMessage
     public void onMessage(Session session, Message message){
         logger.log(Level.INFO, message.toString());
+        if (message.getType() == MessageType.STATUS_CHANGE) {
+            users.get(session.getId()).setStatus(message.getStatus());
+        }
         broadcast(message);
 
     }
@@ -52,14 +57,15 @@ public class ChatEndpoint {
 
     private static void broadcast(Message message){
         chatEndpoints.forEach(session -> {
-            synchronized (session) {
-                try {
-                    session.getBasicRemote()
-                            .sendObject(message);
-                } catch (IOException | EncodeException e) {
-                    e.printStackTrace();
+            if (users.get(session.getId()).getStatus() == UserStatus.ONLINE)
+                synchronized (session) {
+                    try {
+                        session.getBasicRemote()
+                                .sendObject(message);
+                    } catch (IOException | EncodeException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
         });
     }
 }
