@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
@@ -18,6 +20,8 @@ public class ChatEndpoint {
 
     private static HashMap<String, User> users = new HashMap<>();
 
+    private static Logger logger = Logger.getLogger(ChatEndpoint.class.getName());
+
     @OnOpen
     public void onOpen(Session session, @PathParam("username") String username){
         chatEndpoints.add(session);
@@ -26,13 +30,14 @@ public class ChatEndpoint {
         user.setUsername(username);
         user.setActive(true);
         users.put(session.getId(), user);
-
-        System.out.println(username + " connected!!");
+        logger.log(Level.INFO, username + " connected!!");
     }
 
     @OnMessage
     public void onMessage(Session session, Message message){
-        System.out.println(users.get(session.getId()) + " says: " + message);
+        logger.log(Level.INFO, message.toString());
+        broadcast(message);
+
     }
 
     @OnClose
@@ -45,4 +50,16 @@ public class ChatEndpoint {
         // Do error handling here
     }
 
+    private static void broadcast(Message message){
+        chatEndpoints.forEach(session -> {
+            synchronized (session) {
+                try {
+                    session.getBasicRemote()
+                            .sendObject(message);
+                } catch (IOException | EncodeException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 }
