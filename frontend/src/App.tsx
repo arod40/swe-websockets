@@ -1,24 +1,25 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
+import ChatRoom from "./components/ChatRoom";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+  const [username, setUsername] = useState("");
+  const [registered, setRegistered] = useState(false);
+
+  const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(event.target.value);
+  };
+
+  const handleRegister = () => {
+    setRegistered(true);
+  };
+
+  return registered ? (
+    <ChatRoom username={username}></ChatRoom>
+  ) : (
+    <div>
+      <input value={username} onChange={handleUsernameChange} />
+      <button onClick={handleRegister}>Login</button>
     </div>
   );
 }
