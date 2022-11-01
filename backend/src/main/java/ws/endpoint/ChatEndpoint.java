@@ -1,10 +1,7 @@
 package ws.endpoint;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,12 +23,26 @@ public class ChatEndpoint {
 
     @OnOpen
     public void onOpen(Session session, @PathParam("username") String username){
+        // Add new user to Server session
         chatEndpoints.add(session);
-
         User user = new User();
         user.setUsername(username);
         user.setStatus(UserStatus.ONLINE);
         users.put(session.getId(), user);
+
+        // Tell the new user the list of other users
+        Message userListMessage = new Message();
+        userListMessage.setType(MessageType.USER_LIST);
+        userListMessage.setUsers(users.values().stream().toList());
+        sendMessage(session, userListMessage);
+
+        // Broadcast new user joined
+        Message newOnlineUserMessage = new Message();
+        newOnlineUserMessage.setType(MessageType.STATUS_CHANGE);
+        newOnlineUserMessage.setFrom(user.getUsername());
+        newOnlineUserMessage.setStatus(UserStatus.ONLINE);
+        broadcast(newOnlineUserMessage);
+
         logger.log(Level.INFO, username + " connected!!");
     }
 
@@ -48,6 +59,16 @@ public class ChatEndpoint {
     @OnClose
     public void onClose(Session session){
         chatEndpoints.remove(session);
+
+        // Broadcast new user left
+        User user = users.get(session.getId());
+        Message offlineUserMessage = new Message();
+        offlineUserMessage.setType(MessageType.STATUS_CHANGE);
+        offlineUserMessage.setFrom(user.getUsername());
+        offlineUserMessage.setStatus(UserStatus.OFFLINE);
+        broadcast(offlineUserMessage);
+
+        logger.log(Level.INFO, user.getUsername() + " connected!!");
     }
 
     @OnError
@@ -58,14 +79,18 @@ public class ChatEndpoint {
     private static void broadcast(Message message){
         chatEndpoints.forEach(session -> {
             if (users.get(session.getId()).getStatus() == UserStatus.ONLINE)
-                synchronized (session) {
-                    try {
-                        session.getBasicRemote()
-                                .sendObject(message);
-                    } catch (IOException | EncodeException e) {
-                        e.printStackTrace();
-                    }
-                }
+                sendMessage(session, message);
         });
+    }
+
+    private static void sendMessage(Session session, Message message){
+        synchronized (session) {
+            try {
+                session.getBasicRemote()
+                        .sendObject(message);
+            } catch (IOException | EncodeException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
