@@ -25,20 +25,26 @@ export default function ChatRoom(props: ChatRoomProps) {
       if (message.type === "MESSAGE") {
         setMessages([...messages, message]);
       } else if (message.type === "STATUS_CHANGE") {
-        setUsers({
-          ...users,
-          [message.from]: {
-            username: message.from,
-            status: message.status!,
-          },
-        });
-      }
-      else if (message.type === "USER_LIST") {
+        if (message.status === "OFFLINE") {
+          delete users[message.from];
+          setUsers({ ...users });
+        } else {
+          setUsers({
+            ...users,
+            [message.from]: {
+              username: message.from,
+              status: message.status!,
+            },
+          });
+        }
+      } else if (message.type === "USER_LIST") {
         console.log(message.users);
-        setUsers(message.users!.reduce((acc, user) => {
-          acc[user.username] = user;
-          return acc;
-        }, {} as Record<string, User>));
+        setUsers(
+          message.users!.reduce((acc, user) => {
+            acc[user.username] = user;
+            return acc;
+          }, {} as Record<string, User>)
+        );
       }
     },
   });
@@ -89,11 +95,7 @@ export default function ChatRoom(props: ChatRoomProps) {
             ))}
           </div>
           <DraftArea onSend={handleSend}></DraftArea>
-          <Switch
-            edge="end"
-            onChange={handleDndChange}
-            checked={dnd}
-          />
+          <Switch edge="end" onChange={handleDndChange} checked={dnd} />
         </Grid>
       </Grid>
     </div>
