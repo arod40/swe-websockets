@@ -27,9 +27,16 @@ export default function ChatRoom(props: ChatRoomProps) {
           ...users,
           [message.from]: {
             username: message.from,
-            status: message.status,
+            status: message.status!,
           },
         });
+      }
+      else if (message.type === "USER_LIST") {
+        console.log(message.users);
+        setUsers(message.users!.reduce((acc, user) => {
+          acc[user.username] = user;
+          return acc;
+        }, {} as Record<string, User>));
       }
     },
   });

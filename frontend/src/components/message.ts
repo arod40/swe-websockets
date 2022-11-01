@@ -1,4 +1,4 @@
-import { type UserStatus } from "./user";
+import { type User, type UserStatus } from "./user";
 
 interface Message {
   content: string;
@@ -6,8 +6,9 @@ interface Message {
 }
 
 interface BackendMessage extends Message {
-  status: UserStatus;
-  type: "MESSAGE" | "STATUS_CHANGE";
+  status?: UserStatus;
+  type: "MESSAGE" | "STATUS_CHANGE" | "USER_LIST";
+  users?: User[];
 }
 
 export { type BackendMessage, type Message };
