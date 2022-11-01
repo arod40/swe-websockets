@@ -68,7 +68,7 @@ public class ChatEndpoint {
         offlineUserMessage.setStatus(UserStatus.OFFLINE);
         broadcast(offlineUserMessage);
 
-        logger.log(Level.INFO, user.getUsername() + " connected!!");
+        logger.log(Level.INFO, user.getUsername() + " disconnected!!");
     }
 
     @OnError
@@ -78,7 +78,7 @@ public class ChatEndpoint {
 
     private static void broadcast(Message message){
         chatEndpoints.forEach(session -> {
-            if (users.get(session.getId()).getStatus() == UserStatus.ONLINE)
+            if (message.getType() != MessageType.MESSAGE || users.get(session.getId()).getStatus() == UserStatus.ONLINE)
                 sendMessage(session, message);
         });
     }
