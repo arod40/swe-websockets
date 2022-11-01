@@ -7,6 +7,7 @@ import { type User } from "./user";
 import { Grid } from "@mui/material";
 import List from "@mui/material/List";
 import UserDisplay from "./UserDisplay";
+import Switch from "@mui/material/Switch";
 
 const SOCKET_BASE_URL = "ws://localhost:8025/chat/";
 
@@ -17,6 +18,7 @@ interface ChatRoomProps {
 export default function ChatRoom(props: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<Record<string, User>>({});
+  const [dnd, setDnd] = useState(false);
   const { sendMessage } = useWebSocket(SOCKET_BASE_URL + props.username, {
     onMessage: (event) => {
       const message: BackendMessage = JSON.parse(event.data);
@@ -52,6 +54,18 @@ export default function ChatRoom(props: ChatRoomProps) {
     sendMessage(JSON.stringify(msg));
   };
 
+  const handleDndChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setDnd(event.target.checked);
+    const msg: BackendMessage = {
+      from: props.username,
+      type: "STATUS_CHANGE",
+      content: "",
+      status: event.target.checked ? "DND" : "ONLINE",
+    };
+
+    sendMessage(JSON.stringify(msg));
+  };
+
   return (
     <div>
       <Grid container spacing={2}>
@@ -75,6 +89,11 @@ export default function ChatRoom(props: ChatRoomProps) {
             ))}
           </div>
           <DraftArea onSend={handleSend}></DraftArea>
+          <Switch
+            edge="end"
+            onChange={handleDndChange}
+            checked={dnd}
+          />
         </Grid>
       </Grid>
     </div>
